@@ -1,0 +1,3 @@
+vazio inicio() {
+    escrever("teste");
+}

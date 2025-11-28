@@ -3,6 +3,7 @@ meu bootloader + kernel feito em assembly ARM64. por que Neon? Sei lá, me parec
 
 ## drivers:
 1. Terminal UART (QEMU).
+2. Disco VirtIO.
 
 ## bibliotecas:
 1. Neon Script: uma biblioteca simples de comandos do terminal (ainda vai ser realmente script).

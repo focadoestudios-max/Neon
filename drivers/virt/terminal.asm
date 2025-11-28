@@ -1,13 +1,23 @@
 // drivers/virt/terminal.asm
 .global _escrever_tex
 .global _escrever_car
+.global _escrever_hex
+.global _escrever_decimal
 .global _obter_car
 .global _config_uart
 
+.section .bss
 uart_base_real: .quad 0
+.align 4
+hex_buffer: .space 17
+    .byte 0
+    
+.align 8
+dec_buffer: .space 21
 
+.section .text
 _config_uart:
-    // inicializa uart_base_real apenas uma vez
+    // inicia uart_base_real so uma vez
     ldr x9, = UART_BASE
     ldr x10, = uart_base_real
     str x9, [x10]
@@ -41,6 +51,10 @@ _obter_car:
     ret
 
 _escrever_tex:
+    // preserva registradores
+    stp x0, x1, [sp, -16]!
+    stp x2, x4, [sp, -16]!
+    
     ldr x1, = uart_base_real
     ldr x1, [x1]
 1:
@@ -50,4 +64,69 @@ _escrever_tex:
     strb w2, [x1, x4]
     b 1b
 2:
+    // restaura registradores
+    ldp x2, x4, [sp], 16
+    ldp x0, x1, [sp], 16
     ret
+
+_escrever_hex:
+    // x0 = valor pra escrever
+    stp x29, x30, [sp, -48]!
+    mov x29, sp
+    stp x19, x20, [sp, 16]
+    str x21, [sp, 32]
+
+    mov x19, x0
+    mov w20, 16
+    ldr x21, = hex_buffer
+1:
+    sub w20, w20, 1
+    and w0, w19, 0xf
+    cmp w0, 9
+    b.gt 2f
+    add w0, w0, '0'
+    b 3f
+2:
+    add w0, w0, 'a' - 10
+3:
+    strb w0, [x21, x20]
+    lsr x19, x19, 4
+    cbnz w20, 1b
+
+    ldr x0, = hex_buffer
+    bl _escrever_tex
+
+    ldr x21, [sp, 32]
+    ldp x19, x20, [sp, 16]
+    ldp x29, x30, [sp], 48
+    ret
+_escrever_decimal:
+    // x0 = valor pra escrever
+    stp x29, x30, [sp, -48]!
+    mov x29, sp
+    stp x19, x20, [sp, 16]
+    str x21, [sp, 32]
+
+    mov x19, x0
+    ldr x21, = dec_buffer
+    add x21, x21, 20
+    mov w0, 0
+    strb w0, [x21], -1
+
+    mov x20, 10
+1:
+    udiv x0, x19, x20
+    msub x1, x0, x20, x19
+    add w1, w1, '0'
+    strb w1, [x21], -1
+    mov x19, x0
+    cbnz x19, 1b
+
+    add x0, x21, 1
+    bl _escrever_tex
+
+    ldr x21, [sp, 32]
+    ldp x19, x20, [sp, 16]
+    ldp x29, x30, [sp], 48
+    ret
+    
