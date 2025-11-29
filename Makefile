@@ -1,14 +1,14 @@
+# compilar FPB sem extensão
 FPB=./compiladores/fpb
 
-# arquivo FPB sem extensão
-FPB_FONTE := teste
-FPB_FONTE_CAMINHO := fpb/$(FPB_FONTE)
+FPB_FONTE := biblis/ns
+FPB_FONTE_CAMINHO := $(FPB_FONTE)
 
-# compilar FPB => gera fpb/*.asm
 compilar_fpb:
 	chmod +x compiladores/fpb
-	$(FPB) fpb/$(FPB_FONTE) -asm
+	$(FPB) $(FPB_FONTE) -asm -O2 -sl
 
+FPB_ASM := $(wildcard $(dir $(FPB_FONTE_CAMINHO))*.asm)
 
 AS=as
 LD=ld
@@ -21,12 +21,8 @@ BOOTLOADER_CODIGOS= \
 
 BOOTLOADER_OBJETOS=$(BOOTLOADER_CODIGOS:.asm=.o)
 
-# todos os .asm reais dentro de fpb/
-FPB_ASM := $(wildcard fpb/*.asm)
-
 KERNEL_CODIGOS= \
 	nucleo/kernel.asm \
-	biblis/ns.asm \
 	drivers/virt/terminal.asm \
 	$(FPB_ASM)
 
