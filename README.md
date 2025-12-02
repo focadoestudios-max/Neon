@@ -12,3 +12,5 @@ por que Neon? Sei lá, me pareceu um nome legal kkkkkkk
 
 # extra:
 agora tem suporte a FPB (Fácil Programação Baixo nivel) :D
+
+digite 'a' no bootloader e '-ajuda' no kernel para saber os comandos.
