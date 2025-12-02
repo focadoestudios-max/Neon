@@ -11,3 +11,11 @@ por que Neon? Sei lá, me pareceu um nome legal kkkkkkk
 
 # extra:
 agora tem suporte a FPB (Fácil Programação Baixo nivel) :D
+
+## comandos básicos do NS:
+## no bootloader:
+1. e: carrega o kernel do disco e executa
+2. s: mostra os status do bootloader, versão, e o tamanho da pilha
+## no kernel:
+1. -ajuda: exibe todos os comandos disponíveis
+2. -status: exibe a versão do kernel e o tamanho da pilha
