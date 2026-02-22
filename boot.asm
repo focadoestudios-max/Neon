@@ -127,7 +127,7 @@ carregar_kernel:
     bl _escrever_tex
     
     // escreve padrão de teste em endereço temporario
-    ldr x0, = 0x40210000  // apos o kernel
+    ldr x0, = 0x40210000 // apos o kernel
     ldr x1, = 0x123456789ABCDEF0
     str x1, [x0]
     
@@ -181,7 +181,7 @@ soma_loop:
     bl _escrever_tex
     
     // salva estado atual
-    mov x19, x30  // salva LR
+    mov x19, x30 // salva LR
     
     ldr x0, = msg_salto
     bl _escrever_tex
@@ -268,7 +268,8 @@ descer_pra_el1:
     // PC do kernel
     ldr x0, = msg_EL2
     bl _escrever_tex
-    ldr x0, = 0x40200000
+    ldr x0, = ne_entrada
+    ldr x0, [x0]
     msr ELR_EL2, x0
 
     eret
@@ -276,7 +277,8 @@ ja_em_el1:
     ldr x0, = msg_EL1
     bl _escrever_tex
     // carrega o kernel
-    ldr x0, = 0x40200000
+    ldr x0, = ne_entrada
+    ldr x0, [x0]
     br x0
 .section .rodata
 comando: .asciz "~ $ "

@@ -5,6 +5,7 @@ meu bootloader + kernel feito em Assembly ARM64 e FPB.
 * vetores de exceção configurados.
 * MMU desativada temporariamente.
 * svc configurada.
+* Formato NE (Necéssario) para binários serem lidos.
 
 ## drivers:
 1. Terminal virt UART.

@@ -9,23 +9,33 @@ UART_CR = 0x30;
 
 SECTIONS {
     . = 0x40200000;
-    
+
+    .ne_legivel : {
+        BYTE(0x4E) BYTE(0x45) BYTE(0x00) BYTE(0x01) /* assinatura NE */
+        LONG(_ne_tamanho) /* tamanho do binário */
+        QUAD(_inicio) /* ponto de entrada */
+        LONG(0x00000001) /* versão */
+        LONG(0x00000000) /* reservado */
+        QUAD(0x00000000) /* reservado */
+    }
+
+    . = 0x40200020; /* força o .text imediatamente depois dos 32 bytes do cabeçalho */
+
     .text : {
         *(.text.kernel)
         *(.text)
         *(.text.*)
-    } :text
-    
+    }
     .rodata : {
         *(.rodata)
         *(.rodata.*)
-    } :rodata
-    
-    .data : { 
+    }
+    .data : {
         *(.data)
         *(.data.*)
-    } :data
-    
+    }
+    _ne_tamanho = . - 0x40200000;
+
     .bss : {
         _bss_inicio = .;
         *(.bss)
@@ -33,16 +43,9 @@ SECTIONS {
         *(COMMON)
         . = ALIGN(4096);
         _bss_fim = .;
-    } :data
-    
+    }
     . = ALIGN(16);
     _pilha_inicio = .;
     . += 0x100000;
     _pilha_fim = .;
-}
-
-PHDRS {
-    text PT_LOAD FLAGS(5); /* RX */
-    rodata PT_LOAD FLAGS(4); /* R */
-    data PT_LOAD FLAGS(6); /* RW */
 }

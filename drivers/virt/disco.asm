@@ -44,13 +44,80 @@ _carregar_kernel:
     bl _inicia_dispositivo
     cbnz x0, erro_inicializacao
 
-    // carrega kernel do setor 64
-    mov x0, 64 // setor
-    mov x1, 64 // numero de setores
-    ldr x2, = 0x40200000 // destino(endereço do kernel)
+    // le o cabeçalho NE, setor 64, apenas 1 setor(512 bytes)
+    // o cabeçalho fica no inicio do binario do kernel
+    ldr x0, = msg_lendo_cabecalho
+    bl _escrever_tex
+
+    mov x0, 64 // setor de inicio do kernel no disco
+    mov x1, 1 // apenas 1 setor pra ler o cabeçalho
+    ldr x2, = ne_buf // buffer temporario
     mov x3, x19
     bl _ler_setores
     cbnz x0, erro_leitura
+
+    // debug: mostra os primeiros 8 bytes lidos no ne_buf
+    ldr x0, = msg_ne_buf_debug
+    bl _escrever_tex
+    ldr x0, = ne_buf
+    ldr x1, [x0]
+    mov x0, x1
+    bl _escrever_hex
+    ldr x0, = msg_nova_linha
+    bl _escrever_tex
+
+    // valida assinatura "NE\x00\x01" byte a byte
+    ldr x0, = ne_buf
+    ldrb w1, [x0, 0]
+    cmp w1, 0x4E // 'N'
+    b.ne erro_assinatura_ne
+    ldrb w1, [x0, 1]
+    cmp w1, 0x45 // 'E'
+    b.ne erro_assinatura_ne
+    ldrb w1, [x0, 2]
+    cmp w1, 0x00
+    b.ne erro_assinatura_ne
+    ldrb w1, [x0, 3]
+    cmp w1, 0x01
+    b.ne erro_assinatura_ne
+
+    // le tamanho total(posição 0x04, 4 bytes) e converte pra setores
+    ldr w20, [x0, 4] // w20 = tamanho em bytes
+    ldr x0, = msg_ne_tamanho
+    bl _escrever_tex
+    mov x0, x20
+    bl _escrever_decimal
+    ldr x0, = msg_nova_linha
+    bl _escrever_tex
+
+    // calcula número de setores: (tamanho + 511) / 512
+    add w21, w20, 511
+    lsr w21, w21, 9 // w21 = setores necessários
+
+    // lê endereço de entrada(posição 0x08, 8 bytes)
+    ldr x0, = ne_buf
+    ldr x22, [x0, 8] // x22 = endereço de entrada(_inicio)
+    ldr x0, = msg_ne_entrada
+    bl _escrever_tex
+    mov x0, x22
+    bl _escrever_hex
+    ldr x0, = msg_nova_linha
+    bl _escrever_tex
+
+    // agora carrega o kernel completo com os valores do cabeçalho NE
+    ldr x0, = msg_carregando_ne
+    bl _escrever_tex
+
+    mov x0, 64 // setor inicial
+    mov x1, x21 // setores calculados pelo cabeçalho
+    ldr x2, = 0x40200000 // destino fixo(onde o kernel espera ta)
+    mov x3, x19
+    bl _ler_setores
+    cbnz x0, erro_leitura
+
+    // salva o endereço de entrada pra o bootloader usar depois
+    ldr x0, = ne_entrada
+    str x22, [x0]
 
     ldr x0, = msg_sucesso
     bl _escrever_tex
@@ -71,6 +138,11 @@ erro_inicializacao:
     b fim
 erro_leitura:
     ldr x0, = msg_erro_leitura
+    bl _escrever_tex
+    mov x0, 1
+    b fim
+erro_assinatura_ne:
+    ldr x0, = msg_assinatura_invalida
     bl _escrever_tex
     mov x0, 1
 fim:
@@ -428,7 +500,7 @@ ler_loop:
     nop
     
     ldr x6, = usado_anel
-    ldrh w7, [x6, 2] // usado idc(volatile)
+    ldrh w7, [x6, 2] // usado idc(volatil)
     
     // se w7 == w5, o dispositivo alcançou nosso índice = sucesso
     cmp w7, w5
@@ -638,14 +710,30 @@ disponivel_anel: .space 4 + (2 * 8) + 2
 .align 12
 usado_anel: .space 4 + (8 * 8) + 2
 
-// dados
+// buffer temporário para leitura do cabeçalho NE (1 setor = 512 bytes)
+.align 9
+ne_buf: .space 512
+
+// endereço de entrada lido do cabeçalho NE, acessivel pelo boot.asm
+.align 8
+.global ne_entrada
+ne_entrada: .space 8
+
+// dados da requisição de bloco virtIO
 .align 8
 blk_req: .space 16
+
 .align 4
 status_byte: .space 1
 
 .section .rodata
 msg_iniciando: .asciz "Iniciando carregamento...\r\n"
+msg_lendo_cabecalho: .asciz "[NE]: Lendo cabeçalho...\r\n"
+msg_ne_buf_debug: .asciz "[NE]: primeiros 8 bytes lidos: "
+msg_ne_tamanho: .asciz "[NE]: Tamanho do binário(bytes): "
+msg_ne_entrada: .asciz "[NE]: Ponto de entrada: "
+msg_carregando_ne: .asciz "[NE]: Carregando kernel com tamanho real...\r\n"
+msg_assinatura_invalida: .asciz "[ERRO]: Assinatura NE inválida — não é um binário NE\r\n"
 msg_procurando: .asciz "Procurando dispositivo VirtIO-blk...\r\n"
 msg_encontrado: .asciz "Dispositivo encontrado em: "
 msg_nao_encontrado: .asciz "Dispositivo não encontrado\r\n"
